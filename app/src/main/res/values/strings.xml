@@ -4,5 +4,10 @@
     <string name="title_short_stories">Short Stories</string>
     <string name="title_main_activity">English for kids</string>
     <string name="menu_swap_ui">Swap UI</string>
-
+    <string name="msg_loading">Loading Video</string>
+    <string name="msg_fullscreen">Full Screen</string>
+    <string name="back">Back</string>
+    <string name="download">Download</string>
+    <string name="url_video">http://www.viddler.com/file/%1$s/html5</string>
+    <string name="data_updating">Data Updating</string>
 </resources>

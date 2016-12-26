@@ -74,10 +74,16 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
             if (item.getName().toLowerCase().contains(keySearch.toLowerCase())) {
                 dataModels.add(item);
             }
+            if (item.getName().toLowerCase()
+                .contains(keySearch.toLowerCase())) dataModels.add(item);
         }
         mListDataModel.clear();
         mListDataModel.addAll(dataModels);
         notifyDataSetChanged();
+    }
+
+    public interface OnItemClick {
+        void onClickItem(DataModel dataModel, int type);
     }
 
     public class DataModelHolder extends RecyclerView.ViewHolder {
@@ -106,9 +112,5 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
             DataModel dataModel = mListDataModel.get(getAdapterPosition());
             if (mOnItemClick != null) mOnItemClick.onClickItem(dataModel, mTypeWatch);
         }
-    }
-
-    public interface OnItemClick {
-        void onClickItem(DataModel dataModel, int type);
     }
 }

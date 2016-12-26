@@ -26,14 +26,14 @@ import ui.fragment.DataModelFragment;
 
 public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
     private final String TAG = getClass().getSimpleName();
-    private List<DataModelFragment> mListFragment = new ArrayList<>();
-    private ViewPagerAdapter mViewPagerAdapter;
     @BindView(R.id.tool_bar)
     Toolbar mToolbar;
     @BindView(R.id.tabs)
     TabLayout mTabLayout;
     @BindView(R.id.view_pager)
     ViewPager mViewPager;
+    private List<DataModelFragment> mListFragment = new ArrayList<>();
+    private ViewPagerAdapter mViewPagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

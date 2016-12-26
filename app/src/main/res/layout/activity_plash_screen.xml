@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/color_amber_800"
     android:fitsSystemWindows="true"
-    tools:context="ui.activity.PlashScreenActivity">
+    tools:context="com.framgia.englishforkid_3.ui.activity.PlashScreenActivity">
 
     <TextView
         android:id="@+id/text_plash_screen"
