@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">EnglishForKid_3</string>
+    <string name="app_name">English For Kids</string>
+    <string name="title_songs">Songs</string>
+    <string name="title_short_stories">Short Stories</string>
+    <string name="title_main_activity">English for kids</string>
+
 </resources>

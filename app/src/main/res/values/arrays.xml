@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="array_main_activity">
+        <item>@string/title_songs</item>
+        <item>@string/title_short_stories</item>
+    </string-array>
+</resources>
