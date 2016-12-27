@@ -73,7 +73,7 @@ public class JsoupParserHtml {
         return stories;
     }
 
-    private static String parseUrlVideo(String url) throws IOException {
+    public static String parseUrlVideo(String url) throws IOException {
         Document doc = Jsoup.connect(url).get();
         return (doc.select(DIV_SELECT_AUDIO).first().attr(ATTRIBUTE_VIDEO_ID));
     }

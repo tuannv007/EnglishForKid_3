@@ -3,10 +3,11 @@
     <color name="color_blue_light">#3F51B5</color>
     <color name="color_blue_dark">#303F9F</color>
     <color name="color_border_yellow">#FAC366</color>
-    <color name="color_amber_800">#fc8f03</color>
+    <color name="color_amber_800">#fc6703</color>
     <color name="color_orange_700">#EF6C00</color>
     <color name="color_pink">#FF4081</color>
     <color name="color_orange">#e65400</color>
     <color name="color_white">#FFFFFF</color>
     <color name="color_blue_grey">#dfd9d9</color>
+    <color name="color_deep_orange_100">#FF9E80</color>
 </resources>

@@ -11,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class SQLiteHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "EnglishForKids.db";
     private static final int DATABASE_VERSION = 1;
-    public static final String DB_COLUMN_ID = "id";
+    public static final String FIELD_COLUMN_ID = "id";
     public static final String FIELD_NAME = "name";
     public static final String FIELD_IMAGE_URL = "imageUrl";
     public static final String FIELD_PATH_RENDER = "pathRender";
@@ -20,14 +20,14 @@ public class SQLiteHelper extends SQLiteOpenHelper {
     public static final String TABLE_SHORT_STORIES = "shortStories";
     private final String DATABASE_CREATE_SONGS = "Create table "
         + TABLE_SONGS + "( "
-        + DB_COLUMN_ID + " integer primary key autoincrement, "
+        + FIELD_COLUMN_ID + " integer primary key autoincrement, "
         + FIELD_NAME + " text not null,"
         + FIELD_IMAGE_URL + " text,"
         + FIELD_PATH_RENDER + " text,"
         + FIELD_URL_MP4 + " text" + ");";
     private final String DATABASE_CREATE_SHORT_STORIES = "Create table "
         + TABLE_SHORT_STORIES + "( "
-        + DB_COLUMN_ID + " integer primary key autoincrement, "
+        + FIELD_COLUMN_ID + " integer primary key autoincrement, "
         + FIELD_NAME + " text not null,"
         + FIELD_IMAGE_URL + " text,"
         + FIELD_PATH_RENDER + " text,"

@@ -19,8 +19,8 @@ public class SQLiteCommon extends SQLiteHelper {
     public static final int TYPE_TABLE_SONGS = 1;
     public static final int TYPE_TABLE_SHORT_STORIES = 2;
     public static String[] mAllColumn =
-        {SQLiteHelper.FIELD_NAME, SQLiteHelper.FIELD_IMAGE_URL, SQLiteHelper.FIELD_PATH_RENDER,
-            SQLiteHelper.FIELD_URL_MP4};
+        {SQLiteHelper.FIELD_COLUMN_ID, SQLiteHelper.FIELD_NAME, SQLiteHelper.FIELD_IMAGE_URL,
+            SQLiteHelper.FIELD_PATH_RENDER, SQLiteHelper.FIELD_URL_MP4};
     private SQLiteDatabase mSqLiteDatabase;
 
     public SQLiteCommon(Context context) {
@@ -40,7 +40,7 @@ public class SQLiteCommon extends SQLiteHelper {
         }
     }
 
-    public void saveDataModel(DataModel dataModel, int type) {
+    private void saveDataModel(DataModel dataModel, int type) {
         ContentValues values = new ContentValues();
         values.put(SQLiteHelper.FIELD_NAME, dataModel.getName());
         values.put(SQLiteHelper.FIELD_IMAGE_URL, dataModel.getImageUrl());
@@ -49,15 +49,26 @@ public class SQLiteCommon extends SQLiteHelper {
         mSqLiteDatabase.insert(getTableName(type), null, values);
     }
 
-    public void deleteDataModel(int type) {
+    public void updateDataModel(DataModel dataModel, int type) {
         try {
             mSqLiteDatabase = getWritableDatabase();
-            mSqLiteDatabase.delete(getTableName(type), null, null);
+            ContentValues values = new ContentValues();
+            values.put(SQLiteHelper.FIELD_COLUMN_ID, dataModel.getId());
+            values.put(SQLiteHelper.FIELD_NAME, dataModel.getName());
+            values.put(SQLiteHelper.FIELD_IMAGE_URL, dataModel.getImageUrl());
+            values.put(SQLiteHelper.FIELD_PATH_RENDER, dataModel.getPathRender());
+            values.put(SQLiteHelper.FIELD_URL_MP4, dataModel.getUrlMp4());
+            mSqLiteDatabase.update(getTableName(type), values,
+                SQLiteHelper.FIELD_COLUMN_ID + " = " + dataModel.getId(), null);
         } catch (SQLiteException e) {
             e.printStackTrace();
         } finally {
             mSqLiteDatabase.close();
         }
+    }
+
+    private void deleteDataModel(int type) {
+        mSqLiteDatabase.delete(getTableName(type), null, null);
     }
 
     public List<DataModel> getListDataModel(int type) {

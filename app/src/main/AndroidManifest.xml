@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest
-    package="com.framgia.englishforkid_3"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest package="com.framgia.englishforkid_3"
+          xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -23,5 +22,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name="ui.activity.PlayVideoActivity">
+        </activity>
     </application>
+
 </manifest>
