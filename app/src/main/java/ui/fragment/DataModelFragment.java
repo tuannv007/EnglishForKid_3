@@ -1,8 +1,10 @@
 package ui.fragment;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -11,6 +13,7 @@ import android.view.ViewGroup;
 
 import com.framgia.englishforkid_3.R;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,20 +21,23 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import data.local.SQLiteCommon;
 import data.model.DataModel;
-import ui.activity.PlayVideoActivity;
 import ui.adapter.DataModelAdapter;
 import util.Constant;
+import util.JsoupParserHtml;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class DataModelFragment extends Fragment implements DataModelAdapter.OnItemClick {
+public class DataModelFragment extends Fragment implements DataModelAdapter.OnItemClick,
+    SwipeRefreshLayout.OnRefreshListener {
     private final String TAG = getClass().getSimpleName();
     private SQLiteCommon mSqLiteCommon;
     private DataModelAdapter mAdapter;
     private List<DataModel> mListDataModel = new ArrayList<>();
     @BindView(R.id.recycler_view)
     RecyclerView mRecyclerView;
+    @BindView(R.id.swipe_layout)
+    SwipeRefreshLayout mSwipeRefreshLayout;
     private int mTypeWatch = SQLiteCommon.TYPE_TABLE_SONGS;
 
     public static DataModelFragment newInstance(int typeWatch) {
@@ -74,10 +80,41 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         mAdapter = new DataModelAdapter(getActivity(), mListDataModel, mTypeWatch);
         mAdapter.setOnClickItem(this);
         mRecyclerView.setAdapter(mAdapter);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.color_grey_600);
+        mSwipeRefreshLayout.setOnRefreshListener(this);
+        mSwipeRefreshLayout.setRefreshing(false);
     }
 
     @Override
     public void onClickItem(DataModel dataModel, int type) {
         startActivity(PlayVideoActivity.getProfileIntent(getActivity(), dataModel, type));
+    }
+
+    @Override
+    public void onRefresh() {
+        mSwipeRefreshLayout.setRefreshing(true);
+        new JsoupAsyncTask().execute();
+    }
+
+    private class JsoupAsyncTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                mListDataModel.clear();
+                mListDataModel.addAll(mTypeWatch == SQLiteCommon.TYPE_TABLE_SONGS ?
+                    JsoupParserHtml.parseSongs() : JsoupParserHtml.parseShortStories());
+                mSqLiteCommon.saveListDataModel(mListDataModel, mTypeWatch);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            mAdapter.notifyDataSetChanged();
+            mSwipeRefreshLayout.setRefreshing(false);
+        }
     }
 }
