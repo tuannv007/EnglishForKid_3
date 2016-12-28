@@ -7,4 +7,9 @@
         android:title="@android:string/search_go"
         app:actionViewClass="android.support.v7.widget.SearchView"
         app:showAsAction="ifRoom|collapseActionView"/>
+    <item
+        android:id="@+id/action_swap_ui"
+        android:icon="@drawable/menu_swap_white"
+        android:title="@string/menu_swap_ui"
+        app:showAsAction="never"/>
 </menu>

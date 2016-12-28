@@ -12,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
+import android.view.MenuItem;
 
 import com.framgia.englishforkid_3.R;
 
@@ -24,7 +25,8 @@ import data.local.SQLiteCommon;
 import ui.fragment.DataModelFragment;
 
 public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
-    private List<Fragment> mListFragment = new ArrayList<>();
+    private final String TAG = getClass().getSimpleName();
+    private List<DataModelFragment> mListFragment = new ArrayList<>();
     private ViewPagerAdapter mViewPagerAdapter;
     @BindView(R.id.tool_bar)
     Toolbar mToolbar;
@@ -52,6 +54,18 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_swap_ui) swapUI();
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void swapUI() {
+        for (DataModelFragment fragment : mListFragment) {
+            fragment.swapUI();
+        }
+    }
+
     private void initData() {
         setSupportActionBar(mToolbar);
         setTitle(R.string.title_main_activity);
@@ -71,17 +85,18 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        DataModelFragment fragment =
-            (DataModelFragment) mListFragment.get(mViewPager.getCurrentItem());
-        fragment.filter(newText);
+        for (DataModelFragment fragment : mListFragment) {
+            fragment.filter(newText);
+        }
         return true;
     }
 
     private class ViewPagerAdapter extends FragmentPagerAdapter {
         private String[] mTitles;
-        private List<Fragment> mListFragment;
+        private List<DataModelFragment> mListFragment;
 
-        public ViewPagerAdapter(FragmentManager fm, String[] titles, List<Fragment> fragments) {
+        public ViewPagerAdapter(FragmentManager fm, String[] titles,
+                                List<DataModelFragment> fragments) {
             super(fm);
             mTitles = titles;
             mListFragment = fragments;
