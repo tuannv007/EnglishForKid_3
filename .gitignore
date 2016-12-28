@@ -6,7 +6,4 @@
 /captures
 /.idea/
 gradlew.bat
-gradlew
-gradle/wrapper/gradle-wrapper.properties
-gradle.properties
-settings.gradle
+

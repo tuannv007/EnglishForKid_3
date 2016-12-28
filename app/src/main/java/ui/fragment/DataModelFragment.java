@@ -21,6 +21,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import data.local.SQLiteCommon;
 import data.model.DataModel;
+import ui.activity.DisplayVideoActivity;
 import ui.adapter.DataModelAdapter;
 import util.Constant;
 import util.JsoupParserHtml;
@@ -32,16 +33,16 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
     SwipeRefreshLayout.OnRefreshListener {
     private final String TAG = getClass().getSimpleName();
     private final int SPAN_COUNT_LINEAR = 1;
+    @BindView(R.id.recycler_view)
+    RecyclerView mRecyclerView;
+    @BindView(R.id.swipe_layout)
+    SwipeRefreshLayout mSwipeRefreshLayout;
     private boolean mIsGridLayout;
     private int SPAN_COUNT_GRID;
     private GridLayoutManager mLayoutManager;
     private SQLiteCommon mSqLiteCommon;
     private DataModelAdapter mAdapter;
     private List<DataModel> mListDataModel = new ArrayList<>();
-    @BindView(R.id.recycler_view)
-    RecyclerView mRecyclerView;
-    @BindView(R.id.swipe_layout)
-    SwipeRefreshLayout mSwipeRefreshLayout;
     private int mTypeWatch;
     private int mSpanCount;
 
@@ -92,6 +93,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
 
     @Override
     public void onClickItem(DataModel dataModel, int type) {
+        startActivity(DisplayVideoActivity.getProfileIntent(getActivity(), dataModel, type));
     }
 
     public void swapUI() {

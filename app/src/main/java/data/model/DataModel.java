@@ -67,11 +67,11 @@ public class DataModel implements Serializable {
         this.mUrlMp4 = urlMp4;
     }
 
-    public void setId(int id) {
-        mId = id;
-    }
-
     public int getId() {
         return mId;
+    }
+
+    public void setId(int id) {
+        mId = id;
     }
 }

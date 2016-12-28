@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="color_blue_light">#3F51B5</color>
-    <color name="color_blue_dark">#303F9F</color>
-    <color name="color_border_yellow">#FAC366</color>
-    <color name="color_amber_800">#fc6703</color>
+    <color name="color_amber_800">#fc8f03</color>
     <color name="color_orange_700">#EF6C00</color>
-    <color name="color_pink">#FF4081</color>
-    <color name="color_orange">#e65400</color>
     <color name="color_white">#FFFFFF</color>
     <color name="color_blue_grey">#dfd9d9</color>
     <color name="color_deep_orange_100">#FF9E80</color>
     <color name="color_grey_600">#757575</color>
+    <color name="color_blue_light">#3F51B5</color>
+    <color name="color_blue_dark">#303F9F</color>
+    <color name="color_pink">#FF4081</color>
+    <color name="color_border_yellow">#FAC366</color>
+    <color name="color_orange">#DF4600</color>
+    <color name="color_gray">#9E9E9E</color>
+    <color name="color_gray_dark">#363738</color>
 </resources>
