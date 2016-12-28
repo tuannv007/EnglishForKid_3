@@ -31,6 +31,10 @@ import util.JsoupParserHtml;
 public class DataModelFragment extends Fragment implements DataModelAdapter.OnItemClick,
     SwipeRefreshLayout.OnRefreshListener {
     private final String TAG = getClass().getSimpleName();
+    private final int SPAN_COUNT_LINEAR = 1;
+    private boolean mIsGridLayout;
+    private int SPAN_COUNT_GRID;
+    private GridLayoutManager mLayoutManager;
     private SQLiteCommon mSqLiteCommon;
     private DataModelAdapter mAdapter;
     private List<DataModel> mListDataModel = new ArrayList<>();
@@ -38,7 +42,8 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
     RecyclerView mRecyclerView;
     @BindView(R.id.swipe_layout)
     SwipeRefreshLayout mSwipeRefreshLayout;
-    private int mTypeWatch = SQLiteCommon.TYPE_TABLE_SONGS;
+    private int mTypeWatch;
+    private int mSpanCount;
 
     public static DataModelFragment newInstance(int typeWatch) {
         DataModelFragment dataModelFragment = new DataModelFragment();
@@ -53,9 +58,9 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         super.onCreate(savedInstanceState);
         mSqLiteCommon = new SQLiteCommon(getActivity());
         Bundle bundle = getArguments();
-        if (bundle != null) {
-            mTypeWatch = bundle.getInt(Constant.BUNDLE_TYPE_WATCH);
-        }
+        if (bundle != null) mTypeWatch = bundle.getInt(Constant.BUNDLE_TYPE_WATCH);
+        SPAN_COUNT_GRID = getResources().getInteger(R.integer.span_count);
+        mSpanCount = SPAN_COUNT_GRID;
     }
 
     @Override
@@ -72,14 +77,14 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
     }
 
     private void initViews() {
-        mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), Constant.SPAN_COUNT));
+        mLayoutManager = new GridLayoutManager(getActivity(), mSpanCount);
+        mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setNestedScrollingEnabled(true);
         mRecyclerView.invalidate();
         mListDataModel.addAll(mSqLiteCommon.getListDataModel(mTypeWatch));
-        mAdapter = new DataModelAdapter(getActivity(), mListDataModel, mTypeWatch);
+        swapGridLayout();
         mAdapter.setOnClickItem(this);
-        mRecyclerView.setAdapter(mAdapter);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.color_grey_600);
         mSwipeRefreshLayout.setOnRefreshListener(this);
         mSwipeRefreshLayout.setRefreshing(false);
@@ -87,7 +92,29 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
 
     @Override
     public void onClickItem(DataModel dataModel, int type) {
-        startActivity(PlayVideoActivity.getProfileIntent(getActivity(), dataModel, type));
+    }
+
+    public void swapUI() {
+        if (mIsGridLayout) swapLinearLayout();
+        else swapGridLayout();
+    }
+
+    private void swapGridLayout() {
+        mSpanCount = SPAN_COUNT_GRID;
+        mLayoutManager.setSpanCount(mSpanCount);
+        mAdapter = new DataModelAdapter(getActivity(), mListDataModel, mTypeWatch,
+            R.layout.item_data_model_grid);
+        mRecyclerView.setAdapter(mAdapter);
+        mIsGridLayout = true;
+    }
+
+    private void swapLinearLayout() {
+        mSpanCount = SPAN_COUNT_LINEAR;
+        mLayoutManager.setSpanCount(mSpanCount);
+        mAdapter = new DataModelAdapter(getActivity(), mListDataModel, mTypeWatch,
+            R.layout.item_data_model_linear);
+        mRecyclerView.setAdapter(mAdapter);
+        mIsGridLayout = false;
     }
 
     @Override
@@ -96,14 +123,15 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         new JsoupAsyncTask().execute();
     }
 
-    private class JsoupAsyncTask extends AsyncTask<Void, Void, Void> {
+    private class JsoupAsyncTask extends AsyncTask<Void, Void, List<DataModel>> {
         @Override
-        protected Void doInBackground(Void... voids) {
+        protected List<DataModel> doInBackground(Void... voids) {
             try {
-                mListDataModel.clear();
-                mListDataModel.addAll(mTypeWatch == SQLiteCommon.TYPE_TABLE_SONGS ?
+                List<DataModel> listDataModel = new ArrayList<>();
+                listDataModel.addAll(mTypeWatch == SQLiteCommon.TYPE_TABLE_SONGS ?
                     JsoupParserHtml.parseSongs() : JsoupParserHtml.parseShortStories());
-                mSqLiteCommon.saveListDataModel(mListDataModel, mTypeWatch);
+                mSqLiteCommon.saveListDataModel(listDataModel, mTypeWatch);
+                return listDataModel;
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -111,10 +139,14 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            mAdapter.notifyDataSetChanged();
-            mSwipeRefreshLayout.setRefreshing(false);
+        protected void onPostExecute(List<DataModel> dataModels) {
+            super.onPostExecute(dataModels);
+            if (dataModels != null) {
+                mListDataModel.clear();
+                mListDataModel.addAll(dataModels);
+                mAdapter.notifyDataSetChanged();
+                mSwipeRefreshLayout.setRefreshing(false);
+            }
         }
     }
 }

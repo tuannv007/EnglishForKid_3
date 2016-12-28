@@ -28,17 +28,19 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
     private final String TAG = getClass().getSimpleName();
     private List<DataModel> mListDataModel;
     private List<DataModel> mListDataSearch = new ArrayList<>();
+    private int mResIdLayout;
     private Context mContext;
     private LayoutInflater mLayoutInflater;
     private int mTypeWatch;
     private OnItemClick mOnItemClick;
 
-    public DataModelAdapter(Context context, List<DataModel> dataModels, int type) {
+    public DataModelAdapter(Context context, List<DataModel> dataModels, int type, int resIdLayou) {
         mContext = context;
         mLayoutInflater = LayoutInflater.from(mContext);
         mTypeWatch = type;
         mListDataModel = dataModels;
         mListDataSearch.addAll(dataModels);
+        mResIdLayout = resIdLayou;
     }
 
     public void setOnClickItem(OnItemClick onItemClick) {
@@ -47,7 +49,7 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
 
     @Override
     public DataModelHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new DataModelHolder(mLayoutInflater.inflate(R.layout.item_songs, parent, false));
+        return new DataModelHolder(mLayoutInflater.inflate(mResIdLayout, parent, false));
     }
 
     @Override
@@ -69,7 +71,9 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
         }
         List<DataModel> dataModels = new ArrayList<>();
         for (DataModel item : mListDataSearch) {
-            if (item.getName().toLowerCase().contains(keySearch.toLowerCase())) dataModels.add(item);
+            if (item.getName().toLowerCase().contains(keySearch.toLowerCase())) {
+                dataModels.add(item);
+            }
         }
         mListDataModel.clear();
         mListDataModel.addAll(dataModels);
@@ -77,9 +81,9 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
     }
 
     public class DataModelHolder extends RecyclerView.ViewHolder {
-        @BindView(R.id.image_item_songs)
+        @BindView(R.id.image_picture_item)
         ImageView mImage;
-        @BindView(R.id.text_item_title)
+        @BindView(R.id.text_item_name)
         TextView mTitle;
 
         public DataModelHolder(View itemView) {
