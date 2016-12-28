@@ -10,8 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="ui.activity.DisplayVideoActivity"
-            android:configChanges="orientation|screenSize" >
+            android:name="ui.activity.PlashScreenActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -19,7 +18,9 @@
             </intent-filter>
         </activity>
         <activity android:name="ui.activity.MainActivity"/>
-        <activity android:name="ui.activity.PlashScreenActivity"/>
+        <activity
+            android:name="ui.activity.DisplayVideoActivity"
+            android:configChanges="orientation|screenSize"/>
     </application>
 
 </manifest>

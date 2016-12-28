@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     @BindView(R.id.view_pager)
     ViewPager mViewPager;
     private List<DataModelFragment> mListFragment = new ArrayList<>();
-    private ViewPagerAdapter mViewPagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +71,9 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         String[] titles = getResources().getStringArray(R.array.array_main_activity);
         mListFragment.add(DataModelFragment.newInstance(SQLiteCommon.TYPE_TABLE_SONGS));
         mListFragment.add(DataModelFragment.newInstance(SQLiteCommon.TYPE_TABLE_SHORT_STORIES));
-        mViewPagerAdapter =
+        ViewPagerAdapter viewPagerAdapter =
             new ViewPagerAdapter(getSupportFragmentManager(), titles, mListFragment);
-        mViewPager.setAdapter(mViewPagerAdapter);
+        mViewPager.setAdapter(viewPagerAdapter);
         mTabLayout.setupWithViewPager(mViewPager);
     }
 

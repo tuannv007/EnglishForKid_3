@@ -2,6 +2,7 @@ package ui.fragment;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -10,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.framgia.englishforkid_3.R;
 
@@ -74,7 +76,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
     }
 
     public void filter(String keySearch) {
-        mAdapter.filter(keySearch);
+        if (mAdapter != null) mAdapter.filter(keySearch);
     }
 
     private void initViews() {
@@ -83,7 +85,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setNestedScrollingEnabled(true);
         mRecyclerView.invalidate();
-        mListDataModel.addAll(mSqLiteCommon.getListDataModel(mTypeWatch));
+        mListDataModel.addAll(mSqLiteCommon.getListDataModel(mTypeWatch, null));
         swapGridLayout();
         mAdapter.setOnClickItem(this);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.color_grey_600);
@@ -93,7 +95,9 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
 
     @Override
     public void onClickItem(DataModel dataModel, int type) {
-        startActivity(DisplayVideoActivity.getProfileIntent(getActivity(), dataModel, type));
+        if (dataModel.getUrlMp4() == null) new JsoupAsyncUrlMp4().execute(dataModel);
+        else startActivity(
+            DisplayVideoActivity.getProfileIntent(getActivity(), dataModel, mTypeWatch));
     }
 
     public void swapUI() {
@@ -148,6 +152,37 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
                 mListDataModel.addAll(dataModels);
                 mAdapter.notifyDataSetChanged();
                 mSwipeRefreshLayout.setRefreshing(false);
+            }
+        }
+    }
+
+    private class JsoupAsyncUrlMp4 extends AsyncTask<DataModel, Void, DataModel> {
+        @Override
+        protected DataModel doInBackground(DataModel... dataModels) {
+            DataModel dataModel = dataModels[0];
+            try {
+                String urlMp4 = JsoupParserHtml.parseUrlVideo(dataModel.getPathRender());
+                dataModel.setUrlMp4(getString(R.string.url_video, urlMp4));
+                mSqLiteCommon.updateDataModel(dataModel, mTypeWatch);
+                return dataModel;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(DataModel dataModel) {
+            super.onPostExecute(dataModel);
+            if (dataModel != null) {
+                startActivity(
+                    DisplayVideoActivity.getProfileIntent(getActivity(), dataModel, mTypeWatch));
+                PreferenceManager.getDefaultSharedPreferences(getActivity()).edit()
+                    .putString(Constant.PRE_CURENT_VIDEO_LINK, dataModel.getUrlMp4())
+                    .apply();
+            } else {
+                Toast.makeText(getActivity(), getResources().getString(R.string.data_updating),
+                    Toast.LENGTH_LONG).show();
             }
         }
     }
