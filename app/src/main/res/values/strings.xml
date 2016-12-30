@@ -10,4 +10,5 @@
     <string name="download">Download</string>
     <string name="url_video">http://www.viddler.com/file/%1$s/html5</string>
     <string name="data_updating">Data Updating</string>
+    <string name="error_check_network">Không có kết nối mạng</string>
 </resources>
