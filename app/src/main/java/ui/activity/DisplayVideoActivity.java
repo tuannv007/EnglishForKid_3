@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -14,14 +15,12 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -111,21 +110,16 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         ButterKnife.bind(this);
         mHandler = new Handler();
         mSqLiteCommon = new SQLiteCommon(this);
-        initView();
         getVideoUrl();
-        disPlayVideo(mVideoUrl);
+        initView();
+        if (savedInstanceState != null) disPlayVideo(mVideoUrl);
         randomDataModel(Constant.NUMBER_RANDOM);
     }
 
     private void disPlayVideo(String linkVideo) {
+        if (linkVideo == null) return;
         setVideoUri(linkVideo);
         playVideo(linkVideo);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_display_video, menu);
-        return true;
     }
 
     @Override
@@ -135,9 +129,10 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     }
 
     public void initView() {
+        setUpActionbar();
         mMediaPlayer = new MediaPlayer();
         showProgressDialog();
-        setUpActionbar();
+        mSeekBar.setBackgroundColor(Color.CYAN);
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -171,9 +166,6 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     mLinearOption.setVisibility(View.VISIBLE);
                     mImagePauseLage.setVisibility(View.VISIBLE);
-                    return false;
-                }
-                if (event.getAction() == MotionEvent.ACTION_UP) {
                     hideDisplayLayoutControl();
                     hidePauseCenterVideo();
                     return false;
@@ -214,8 +206,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     private void setUpActionbar() {
         setSupportActionBar(mToolBar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(true);
-            //Hiện nút back
+            setTitle(mDataModel.getName());
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
     }
@@ -292,39 +283,22 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
-            configFullScreenVideo();
-        else {
-            configNotFullScreenVideo();
-        }
+        boolean isFullScreen =
+            getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+        configSizeScreenVideo(isFullScreen);
     }
 
-    private void configNotFullScreenVideo() {
+    private void configSizeScreenVideo(boolean isFullScreen) {
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        FrameLayout.LayoutParams params =
-            (FrameLayout.LayoutParams) mSurfaceView.getLayoutParams();
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mSurfaceView.getLayoutParams();
         params.width = metrics.widthPixels;
-        params.height = getResources().getDimensionPixelSize(R.dimen.dp_300);
+        params.height = isFullScreen ? metrics.heightPixels : getResources().getDimensionPixelSize(R
+            .dimen.dp_300);
         params.leftMargin = 0;
         mSurfaceView.setLayoutParams(params);
-        mToolBar.setVisibility(View.VISIBLE);
-        mRecyclerRandomVideo.setVisibility(View.VISIBLE);
-    }
-
-    private void configFullScreenVideo() {
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        FrameLayout.LayoutParams params =
-            (FrameLayout.LayoutParams) mSurfaceView.getLayoutParams();
-        params.width = metrics.widthPixels;
-        params.height = metrics.heightPixels /*- heightLayoutOption*/;
-        params.leftMargin = 0;
-        mSurfaceView.setLayoutParams(params);
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) actionBar.hide();
-        mToolBar.setVisibility(View.GONE);
-        mRecyclerRandomVideo.setVisibility(View.GONE);
+        mToolBar.setVisibility(isFullScreen ? View.GONE : View.VISIBLE);
+        mRecyclerRandomVideo.setVisibility(isFullScreen ? View.GONE : View.VISIBLE);
     }
 
     private void savePosition() {
@@ -352,11 +326,18 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         }
     }
 
+    private void restoreLinkUrl() {
+        mVideoUrl = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+            .getString(Constant.PRE_CURENT_VIDEO_LINK, "");
+        disPlayVideo(mVideoUrl);
+    }
+
     private void restorePosition() {
         mPosition = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
             .getInt(Constant.PRE_POSITION_VIDEO, 0);
         mMediaPlayer.start();
         mMediaPlayer.reset();
+        if (mVideoUrl == null) return;
         disPlayVideo(mVideoUrl);
         mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
@@ -366,8 +347,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         });
     }
 
-    @OnClick({R.id.image_play, R.id.image_fullscreen, R.id
-        .image_pause_lage})
+    @OnClick({R.id.image_play, R.id.image_fullscreen, R.id.image_pause_lage})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.image_play:
@@ -422,9 +402,10 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     protected void onResume() {
         super.onResume();
         if (mMediaPlayer == null) return;
-        mMediaPlayer.start();
+        mMediaPlayer.pause();
         int idModel = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
             .getInt(Constant.PRE_KEY_ID, 0);
+        restoreLinkUrl();
         if (mDataModel.getId() == idModel) restorePosition();
     }
 
@@ -458,13 +439,13 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     public void onClickItem(DataModel dataModel, int type) {
         mMediaPlayer.pause();
         if (dataModel == null) return;
-        if (dataModel.getUrlMp4() == null) {
-            new JsoupAsyncUrlMp4().execute(dataModel);
-        } else {
+        if (dataModel.getUrlMp4() == null) new JsoupAsyncUrlMp4().execute(dataModel);
+        else {
             mMediaPlayer.reset();
             disPlayVideo(dataModel.getUrlMp4());
             saveLinkToSharef(dataModel);
         }
+        mToolBar.setTitle(dataModel.getName());
         mListDataModel.remove(dataModel);
         randomDataModel(1);
     }
@@ -529,6 +510,8 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
                 mDataModel = dataModel;
                 mMediaPlayer.reset();
                 disPlayVideo(dataModel.getUrlMp4());
+                mImagePlayVideo.setImageResource(R.drawable.ic_play_video);
+                mImagePauseLage.setImageResource(R.drawable.ic_play);
                 saveLinkToSharef(dataModel);
             } else {
                 Toast.makeText(getApplicationContext(),
