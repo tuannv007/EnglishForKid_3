@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import data.model.DataModel;
+import util.Constant;
 
 /**
  * Created by Nhahv on 12/26/2016.
@@ -71,13 +72,15 @@ public class SQLiteCommon extends SQLiteHelper {
         mSqLiteDatabase.delete(getTableName(type), null, null);
     }
 
-    public List<DataModel> getListDataModel(int type) {
+    public List<DataModel> getListDataModel(int type, String selection) {
         List<DataModel> listDataModel = new ArrayList<>();
         try {
             mSqLiteDatabase = getReadableDatabase();
-            String table = getTableName(type);
-            Cursor cursor = mSqLiteDatabase.query(table, mAllColumn, null, null, null, null, null);
-            if (cursor != null && cursor.moveToFirst()) {
+            Cursor cursor =
+                mSqLiteDatabase.query(getTableName(type), mAllColumn, selection, null, null, null,
+                    null);
+            if (cursor == null) return listDataModel;
+            if (cursor.moveToFirst()) {
                 while (!cursor.isAfterLast()) {
                     DataModel dataModel = new DataModel(cursor);
                     listDataModel.add(dataModel);
@@ -96,5 +99,39 @@ public class SQLiteCommon extends SQLiteHelper {
     private String getTableName(int type) {
         return (type == TYPE_TABLE_SONGS) ? SQLiteHelper.TABLE_SONGS : SQLiteHelper
             .TABLE_SHORT_STORIES;
+    }
+
+    public List<DataModel> getDataModelRandom(int type, int idDataModel,int number) {
+        List<DataModel> dataModels = new ArrayList<>();
+        StringBuilder sqlQuery = new StringBuilder();
+        sqlQuery.append("SELECT * FROM ")
+            .append(getTableName(type))
+            .append(" WHERE ")
+            .append(FIELD_COLUMN_ID)
+            .append(" != ")
+            .append(idDataModel)
+            .append(" ORDER BY")
+            .append(" " + "RANDOM() ")
+            .append(" LIMIT ")
+            .append(number);
+        DataModel dataModel;
+        try {
+            mSqLiteDatabase = getReadableDatabase();
+            Cursor cursor =
+                mSqLiteDatabase.rawQuery(sqlQuery.toString(), null);
+            if (cursor != null && cursor.moveToFirst()) {
+                while (!cursor.isAfterLast()) {
+                    dataModel = new DataModel(cursor);
+                    dataModels.add(dataModel);
+                    cursor.moveToNext();
+                }
+                cursor.close();
+            }
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+        } finally {
+            mSqLiteDatabase.close();
+        }
+        return dataModels;
     }
 }

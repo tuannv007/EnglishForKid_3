@@ -7,12 +7,14 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
@@ -27,27 +29,33 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.framgia.englishforkid_3.R;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnTouch;
+import data.local.SQLiteCommon;
 import data.model.DataModel;
+import ui.adapter.DataModelAdapter;
 import util.Constant;
+import util.JsoupParserHtml;
 import util.Util;
 
 /**
  * Created by tuanbg on 12/21/2016.
  */
-public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHolder.Callback {
+public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHolder.Callback,
+    DataModelAdapter.OnItemClick {
     private static final String EXTRA_KEY_POSITION = "key_position";
-    private static final String EXTRA_CHECK_LAUNCHED = "check_launched";
-    private static ProgressDialog mProgressDialog;
-    private final String TAG = DisplayVideoActivity.class.getSimpleName();
+    private List<DataModel> mListDataModel = new ArrayList<>();
+    private final String TAG = getClass().getSimpleName();
     @BindView(R.id.linear_play_option)
     LinearLayout mLinearOption;
     @BindView(R.id.surfaceview)
@@ -68,11 +76,17 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     TextView mTextCurentTime;
     @BindView(R.id.rcl_random_video)
     RecyclerView mRecyclerRandomVideo;
+    private ProgressDialog mProgressDialog;
     private boolean mIsPause;
     private Runnable mRunnable;
     private Handler mHandler;
     private MediaPlayer mMediaPlayer;
-    private SurfaceHolder mSurfaceHolder;
+    private String mVideoUrl;
+    private int mTypeWatch = SQLiteCommon.TYPE_TABLE_SONGS;
+    private SQLiteCommon mSqLiteCommon;
+    private DataModelAdapter mAdapterRandomVideo;
+    private DataModel mDataModel;
+    private int mPosition;
 
     public static Intent getProfileIntent(Context context, DataModel dataModel, int type) {
         Intent intent = new Intent(context, DisplayVideoActivity.class);
@@ -89,28 +103,38 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         setContentView(R.layout.activity_display_video);
         ButterKnife.bind(this);
         mHandler = new Handler();
+        mSqLiteCommon = new SQLiteCommon(this);
         initView();
-        playVideo(getVideoUrl());
+        getVideoUrl();
+        disPlayVideo(mVideoUrl);
+        randomDataModel(Constant.NUMBER_RANDOM);
+    }
+
+    private void disPlayVideo(String linkVideo) {
+        setVideoUri(linkVideo);
+        playVideo(linkVideo);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_disaplay_videlo, menu);
+        getMenuInflater().inflate(R.menu.activity_display_video, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) onBackPressed();
         return super.onOptionsItemSelected(item);
     }
 
     public void initView() {
+        mMediaPlayer = new MediaPlayer();
         showProgressDialog();
         setUpActionbar();
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-               /* if (fromUser) mMediaPlayer.seekTo(progress);*/
+                if (fromUser) mMediaPlayer.seekTo(progress);
             }
 
             @Override
@@ -123,21 +147,28 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
                 mLinearOption.setVisibility(View.VISIBLE);
             }
         });
+        mRecyclerRandomVideo.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+        mAdapterRandomVideo =
+            new DataModelAdapter(getApplicationContext(), mListDataModel, mTypeWatch,
+                R.layout.item_data_model_linear);
+        mRecyclerRandomVideo
+            .setAdapter(mAdapterRandomVideo);
+        mAdapterRandomVideo.setOnClickItem(this);
     }
 
     @OnTouch({R.id.seekbar_time, R.id.surfaceview})
     public boolean onTouch(View view, MotionEvent event) {
         switch (view.getId()) {
             case R.id.surfaceview:
-                if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     mLinearOption.setVisibility(View.VISIBLE);
                     mImagePauseLage.setVisibility(View.VISIBLE);
                     return false;
                 }
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
                     hideDisplayLayoutControl();
                     hidePauseCenterVideo();
-                    return true;
+                    return false;
                 }
             case R.id.seekbar_time:
                 mLinearOption.setVisibility(View.VISIBLE);
@@ -164,15 +195,12 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         }, Constant.TIME_DELAY_CONTROL);
     }
 
-    private String getVideoUrl() {
-        String videoUrl = null;
+    private void getVideoUrl() {
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
-            DataModel mDataModel = (DataModel) bundle.getSerializable(Constant.BUNDLE_DATA_MODEL);
-            if (mDataModel != null) videoUrl = mDataModel.getUrlMp4();
-            return videoUrl;
+            mDataModel = (DataModel) bundle.getSerializable(Constant.BUNDLE_DATA_MODEL);
+            if (mDataModel != null) mVideoUrl = mDataModel.getUrlMp4();
         }
-        return "";
     }
 
     private void setUpActionbar() {
@@ -194,46 +222,51 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     }
 
     private void setTtDurationTime() {
-        int duration = mMediaPlayer.getDuration() / 1000;
-        mTextDurationVideo.setText(Util.convertToTime(duration));
+        if (mMediaPlayer != null) {
+            int duration = mMediaPlayer.getDuration() / 1000;
+            mTextDurationVideo.setText(Util.convertToTime(duration));
+        }
+    }
+
+    private void setVideoUri(String videoUrl) {
+        try {
+            Uri video = Uri.parse(videoUrl);
+            mMediaPlayer.setDataSource(this, video);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void playVideo(final String videoUrl) {
         if (videoUrl != null) {
-            Uri video = Uri.parse(videoUrl);
-            mSurfaceHolder = mSurfaceView.getHolder();
-            mSurfaceHolder.addCallback(this);
-            try {
-                mMediaPlayer = new MediaPlayer();
-                mMediaPlayer.setDataSource(this, video);
-                mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            SurfaceHolder surfaceHolder = mSurfaceView.getHolder();
+            surfaceHolder.addCallback(this);
+            mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mediaPlayer) {
+                    hideDialog();
+                    mMediaPlayer.start();
+                    hidePauseCenterVideo();
+                    hideDisplayLayoutControl();
+                    setTtDurationTime();
+                    mSeekBar.setProgress(0);
+                    mSeekBar.setMax(mMediaPlayer.getDuration());
+                    if (mMediaPlayer.isPlaying()) runTimeSeekbar();
+                }
+            });
+            mMediaPlayer
+                .setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
                     @Override
-                    public void onPrepared(MediaPlayer mediaPlayer) {
-                        mProgressDialog.dismiss();
-                        mMediaPlayer.start();
-                        hidePauseCenterVideo();
-                        hideDisplayLayoutControl();
-                        setTtDurationTime();
-                        mSeekBar.setProgress(0);
-                        mSeekBar.setMax(mMediaPlayer.getDuration());
-                        if (mMediaPlayer.isPlaying()) runTimeSeekbar();
+                    public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
+                        mSeekBar.setSecondaryProgress(i * mMediaPlayer.getDuration() / 100);
                     }
                 });
-                mMediaPlayer
-                    .setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
-                        @Override
-                        public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
-                            mSeekBar.setSecondaryProgress(i * mMediaPlayer.getDuration() / 100);
-                        }
-                    });
-                mMediaPlayer.prepareAsync();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            mMediaPlayer.prepareAsync();
         }
     }
 
     public void runTimeSeekbar() {
+        if (mMediaPlayer == null) return;
         int pos = mMediaPlayer.getCurrentPosition();
         mSeekBar.setProgress(pos);
         mTextCurentTime.setText(String.valueOf(Util.convertToTime(pos / 1000) + " / "));
@@ -254,9 +287,21 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
             configFullScreenVideo();
         else {
-            mToolBar.setVisibility(View.VISIBLE);
-            mRecyclerRandomVideo.setVisibility(View.VISIBLE);
+            configNotFullScreenVideo();
         }
+    }
+
+    private void configNotFullScreenVideo() {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        FrameLayout.LayoutParams params =
+            (FrameLayout.LayoutParams) mSurfaceView.getLayoutParams();
+        params.width = metrics.widthPixels;
+        params.height = getResources().getDimensionPixelSize(R.dimen.dp_300);
+        params.leftMargin = 0;
+        mSurfaceView.setLayoutParams(params);
+        mToolBar.setVisibility(View.VISIBLE);
+        mRecyclerRandomVideo.setVisibility(View.VISIBLE);
     }
 
     private void configFullScreenVideo() {
@@ -270,21 +315,23 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         mSurfaceView.setLayoutParams(params);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) actionBar.hide();
-        mRecyclerRandomVideo.setVisibility(View.INVISIBLE);
+        mToolBar.setVisibility(View.GONE);
+        mRecyclerRandomVideo.setVisibility(View.GONE);
     }
 
     private void savePosition() {
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-            .edit()
-            .putInt(Constant.PRE_POSITION_VIDEO, mMediaPlayer.getCurrentPosition())
-            .apply();
+        if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
+                .putInt(Constant.PRE_POSITION_VIDEO, mMediaPlayer.getCurrentPosition())
+                .putInt(Constant.PRE_KEY_ID, mDataModel.getId())
+                .apply();
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(EXTRA_KEY_POSITION, mMediaPlayer.getCurrentPosition());
-        outState.putBoolean(EXTRA_CHECK_LAUNCHED, true);
     }
 
     @Override
@@ -298,14 +345,15 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     }
 
     private void restorePosition() {
-        final int pos = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+        mPosition = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
             .getInt(Constant.PRE_POSITION_VIDEO, 0);
-        // check null
         mMediaPlayer.start();
+        mMediaPlayer.reset();
+        disPlayVideo(mVideoUrl);
         mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                mMediaPlayer.seekTo(pos);
+                mMediaPlayer.seekTo(mPosition);
             }
         });
     }
@@ -356,13 +404,20 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     @Override
     protected void onPause() {
         super.onPause();
+        mMediaPlayer.pause();
+        mImagePauseLage.setImageResource(R.drawable.ic_pause);
+        mImagePlayVideo.setImageResource(R.drawable.ic_pause_video);
         savePosition();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        restorePosition();
+        if (mMediaPlayer == null) return;
+        mMediaPlayer.start();
+        int idModel = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+            .getInt(Constant.PRE_KEY_ID, 0);
+        if (mDataModel.getId() == idModel) restorePosition();
     }
 
     @Override
@@ -382,5 +437,74 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+    }
+
+    private void randomDataModel(int numberRandom) {
+        List<DataModel> dataModels =
+            mSqLiteCommon.getDataModelRandom(mTypeWatch, mDataModel.getId(), numberRandom);
+        mListDataModel.addAll(dataModels);
+        mAdapterRandomVideo.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onClickItem(DataModel dataModel, int type) {
+        mMediaPlayer.pause();
+        if (dataModel == null) return;
+        if (dataModel.getUrlMp4() == null) {
+            new JsoupAsyncUrlMp4().execute(dataModel);
+        } else {
+            mMediaPlayer.reset();
+            disPlayVideo(dataModel.getUrlMp4());
+            saveLinkToSharef(dataModel);
+        }
+        mListDataModel.remove(dataModel);
+        randomDataModel(1);
+    }
+
+    private void hideDialog() {
+        if (!isFinishing() && mProgressDialog != null) mProgressDialog.dismiss();
+    }
+
+    private void saveLinkToSharef(DataModel dataModel) {
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
+            .putString(Constant.PRE_CURENT_VIDEO_LINK, dataModel.getUrlMp4())
+            .apply();
+    }
+
+    private class JsoupAsyncUrlMp4 extends AsyncTask<DataModel, Void, DataModel> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            showProgressDialog();
+        }
+
+        @Override
+        protected DataModel doInBackground(DataModel... dataModels) {
+            DataModel dataModel = dataModels[0];
+            try {
+                String urlMp4 = JsoupParserHtml.parseUrlVideo(dataModel.getPathRender());
+                dataModel.setUrlMp4(getString(R.string.url_video, urlMp4));
+                mSqLiteCommon.updateDataModel(dataModel, mTypeWatch);
+                return dataModel;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(DataModel dataModel) {
+            super.onPostExecute(dataModel);
+            if (dataModel != null) {
+                mDataModel = dataModel;
+                mMediaPlayer.reset();
+                disPlayVideo(dataModel.getUrlMp4());
+                saveLinkToSharef(dataModel);
+            } else {
+                Toast.makeText(getApplicationContext(),
+                    getResources().getString(R.string.data_updating),
+                    Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }
