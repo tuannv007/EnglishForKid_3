@@ -12,12 +12,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -37,6 +40,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import broadcast.NetworkReceiver;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -52,10 +56,12 @@ import util.Util;
  * Created by tuanbg on 12/21/2016.
  */
 public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHolder.Callback,
-    DataModelAdapter.OnItemClick {
+    DataModelAdapter.OnItemClick, NetworkReceiver.NetworkReceiverListener {
     private static final String EXTRA_KEY_POSITION = "key_position";
     private List<DataModel> mListDataModel = new ArrayList<>();
     private final String TAG = getClass().getSimpleName();
+    @BindView(R.id.linear_layout)
+    LinearLayout mLinearLayout;
     @BindView(R.id.linear_play_option)
     LinearLayout mLinearOption;
     @BindView(R.id.surfaceview)
@@ -87,6 +93,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     private DataModelAdapter mAdapterRandomVideo;
     private DataModel mDataModel;
     private int mPosition;
+    private Snackbar mSnackbar;
 
     public static Intent getProfileIntent(Context context, DataModel dataModel, int type) {
         Intent intent = new Intent(context, DisplayVideoActivity.class);
@@ -154,6 +161,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         mRecyclerRandomVideo
             .setAdapter(mAdapterRandomVideo);
         mAdapterRandomVideo.setOnClickItem(this);
+        NetworkReceiver.setNetworkReceiver(this);
     }
 
     @OnTouch({R.id.seekbar_time, R.id.surfaceview})
@@ -469,6 +477,28 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
             .putString(Constant.PRE_CURENT_VIDEO_LINK, dataModel.getUrlMp4())
             .apply();
+    }
+
+    @Override
+    public void onNetworkConnectChange(boolean isConnect) {
+        if (!isConnect) {
+            if (mSnackbar == null) {
+                mSnackbar =
+                    Snackbar.make(mLinearLayout, R.string.error_check_network,
+                        Snackbar.LENGTH_INDEFINITE)
+                        .setAction("Ok", null);
+                View view = mSnackbar.getView();
+                TextView textSnackbar =
+                    (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                textSnackbar.setGravity(Gravity.CENTER);
+                view.setBackgroundColor(ContextCompat.getColor(this, R.color.color_grey_300));
+            }
+            mSnackbar.show();
+        } else {
+            if (mSnackbar != null && mSnackbar.isShown()) {
+                mSnackbar.dismiss();
+            }
+        }
     }
 
     private class JsoupAsyncUrlMp4 extends AsyncTask<DataModel, Void, DataModel> {
