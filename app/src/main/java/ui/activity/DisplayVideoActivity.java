@@ -327,9 +327,11 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     }
 
     private void restoreLinkUrl() {
-        mVideoUrl = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-            .getString(Constant.PRE_CURENT_VIDEO_LINK, "");
-        disPlayVideo(mVideoUrl);
+        if (mVideoUrl != null) {
+            mVideoUrl = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                .getString(Constant.PRE_CURENT_VIDEO_LINK, "");
+            disPlayVideo(mVideoUrl);
+        }
     }
 
     private void restorePosition() {
@@ -396,6 +398,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         mImagePauseLage.setImageResource(R.drawable.ic_pause);
         mImagePlayVideo.setImageResource(R.drawable.ic_pause_video);
         savePosition();
+        mVideoUrl = null;
     }
 
     @Override
@@ -405,8 +408,8 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         mMediaPlayer.pause();
         int idModel = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
             .getInt(Constant.PRE_KEY_ID, 0);
-        restoreLinkUrl();
         if (mDataModel.getId() == idModel) restorePosition();
+        restoreLinkUrl();
     }
 
     @Override
