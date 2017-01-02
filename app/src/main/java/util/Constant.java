@@ -19,4 +19,5 @@ public class Constant {
     public static final String PRE_FILE_NAME = "PRE_FILE_NAME";
     public static final String PREF_DATA_MODEL = "PREF_DATA_MODEL";
     public static final String PRE_CURENT_VIDEO_LINK = "PRE_CURENT_VIDEO_LINK";
+    public static final long TIME_DELAY_DIALOG = 20000;
 }

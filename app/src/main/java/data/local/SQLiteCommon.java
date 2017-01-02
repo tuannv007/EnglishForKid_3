@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import data.model.DataModel;
-import util.Constant;
 
 /**
  * Created by Nhahv on 12/26/2016.
@@ -101,7 +100,7 @@ public class SQLiteCommon extends SQLiteHelper {
             .TABLE_SHORT_STORIES;
     }
 
-    public List<DataModel> getDataModelRandom(int type, int idDataModel,int number) {
+    public List<DataModel> getDataModelRandom(int type, int idDataModel, int number) {
         List<DataModel> dataModels = new ArrayList<>();
         StringBuilder sqlQuery = new StringBuilder();
         sqlQuery.append("SELECT * FROM ")

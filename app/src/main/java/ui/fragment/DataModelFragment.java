@@ -25,6 +25,7 @@ import data.local.SQLiteCommon;
 import data.model.DataModel;
 import ui.activity.DisplayVideoActivity;
 import ui.adapter.DataModelAdapter;
+import ui.widget.MyProgressDialog;
 import util.Constant;
 import util.JsoupParserHtml;
 
@@ -47,6 +48,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
     private List<DataModel> mListDataModel = new ArrayList<>();
     private int mTypeWatch;
     private int mSpanCount;
+    private MyProgressDialog mProgressDialog;
 
     public static DataModelFragment newInstance(int typeWatch) {
         DataModelFragment dataModelFragment = new DataModelFragment();
@@ -80,6 +82,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
     }
 
     private void initViews() {
+        mProgressDialog = new MyProgressDialog(getActivity());
         mLayoutManager = new GridLayoutManager(getActivity(), mSpanCount);
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setHasFixedSize(true);
@@ -87,7 +90,6 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         mRecyclerView.invalidate();
         mListDataModel.addAll(mSqLiteCommon.getListDataModel(mTypeWatch, null));
         swapGridLayout();
-        mAdapter.setOnClickItem(this);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.color_grey_600);
         mSwipeRefreshLayout.setOnRefreshListener(this);
         mSwipeRefreshLayout.setRefreshing(false);
@@ -98,6 +100,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         if (dataModel.getUrlMp4() == null) new JsoupAsyncUrlMp4().execute(dataModel);
         else startActivity(
             DisplayVideoActivity.getProfileIntent(getActivity(), dataModel, mTypeWatch));
+        mProgressDialog.show();
     }
 
     public void swapUI() {
@@ -109,7 +112,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         mSpanCount = SPAN_COUNT_GRID;
         mLayoutManager.setSpanCount(mSpanCount);
         mAdapter = new DataModelAdapter(getActivity(), mListDataModel, mTypeWatch,
-            R.layout.item_data_model_grid);
+            R.layout.item_data_model_grid, this);
         mRecyclerView.setAdapter(mAdapter);
         mIsGridLayout = true;
     }
@@ -118,7 +121,7 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
         mSpanCount = SPAN_COUNT_LINEAR;
         mLayoutManager.setSpanCount(mSpanCount);
         mAdapter = new DataModelAdapter(getActivity(), mListDataModel, mTypeWatch,
-            R.layout.item_data_model_linear);
+            R.layout.item_data_model_linear, this);
         mRecyclerView.setAdapter(mAdapter);
         mIsGridLayout = false;
     }
@@ -180,10 +183,17 @@ public class DataModelFragment extends Fragment implements DataModelAdapter.OnIt
                 PreferenceManager.getDefaultSharedPreferences(getActivity()).edit()
                     .putString(Constant.PRE_CURENT_VIDEO_LINK, dataModel.getUrlMp4())
                     .apply();
+                mProgressDialog.dismiss();
             } else {
                 Toast.makeText(getActivity(), getResources().getString(R.string.data_updating),
                     Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mProgressDialog != null) mProgressDialog.dismiss();
     }
 }

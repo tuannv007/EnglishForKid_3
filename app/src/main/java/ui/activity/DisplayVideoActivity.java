@@ -1,6 +1,5 @@
 package ui.activity;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -47,6 +46,7 @@ import butterknife.OnTouch;
 import data.local.SQLiteCommon;
 import data.model.DataModel;
 import ui.adapter.DataModelAdapter;
+import ui.widget.MyProgressDialog;
 import util.Constant;
 import util.JsoupParserHtml;
 import util.Util;
@@ -57,7 +57,6 @@ import util.Util;
 public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHolder.Callback,
     DataModelAdapter.OnItemClick, NetworkReceiver.NetworkReceiverListener {
     private static final String EXTRA_KEY_POSITION = "key_position";
-    private List<DataModel> mListDataModel = new ArrayList<>();
     private final String TAG = getClass().getSimpleName();
     @BindView(R.id.linear_layout)
     LinearLayout mLinearLayout;
@@ -81,7 +80,8 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     TextView mTextCurentTime;
     @BindView(R.id.rcl_random_video)
     RecyclerView mRecyclerRandomVideo;
-    private ProgressDialog mProgressDialog;
+    private List<DataModel> mListDataModel = new ArrayList<>();
+    private MyProgressDialog mProgressDialog;
     private boolean mIsPause;
     private Runnable mRunnable;
     private Handler mHandler;
@@ -131,7 +131,8 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
     public void initView() {
         setUpActionbar();
         mMediaPlayer = new MediaPlayer();
-        showProgressDialog();
+        mProgressDialog = new MyProgressDialog(this);
+        mProgressDialog.show();
         mSeekBar.setBackgroundColor(Color.CYAN);
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -152,10 +153,9 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         mRecyclerRandomVideo.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         mAdapterRandomVideo =
             new DataModelAdapter(getApplicationContext(), mListDataModel, mTypeWatch,
-                R.layout.item_data_model_linear);
+                R.layout.item_data_model_linear,this);
         mRecyclerRandomVideo
             .setAdapter(mAdapterRandomVideo);
-        mAdapterRandomVideo.setOnClickItem(this);
         NetworkReceiver.setNetworkReceiver(this);
     }
 
@@ -211,15 +211,6 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         }
     }
 
-    private void showProgressDialog() {
-        if (mProgressDialog == null) {
-            mProgressDialog = new ProgressDialog(this);
-            mProgressDialog.setMessage(getString(R.string.msg_loading));
-            mProgressDialog.setCancelable(false);
-        }
-        if (!mProgressDialog.isShowing()) mProgressDialog.show();
-    }
-
     private void setTtDurationTime() {
         if (mMediaPlayer != null) {
             int duration = mMediaPlayer.getDuration() / 1000;
@@ -243,7 +234,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
             mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mediaPlayer) {
-                    hideDialog();
+                    mProgressDialog.dismiss();
                     mMediaPlayer.start();
                     hidePauseCenterVideo();
                     hideDisplayLayoutControl();
@@ -453,10 +444,6 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         randomDataModel(1);
     }
 
-    private void hideDialog() {
-        if (!isFinishing() && mProgressDialog != null) mProgressDialog.dismiss();
-    }
-
     private void saveLinkToSharef(DataModel dataModel) {
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
             .putString(Constant.PRE_CURENT_VIDEO_LINK, dataModel.getUrlMp4())
@@ -489,7 +476,7 @@ public class DisplayVideoActivity extends AppCompatActivity implements SurfaceHo
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            showProgressDialog();
+            mProgressDialog.show();
         }
 
         @Override

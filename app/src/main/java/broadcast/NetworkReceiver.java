@@ -11,15 +11,7 @@ import android.net.NetworkInfo;
  * <></>
  */
 public class NetworkReceiver extends BroadcastReceiver {
-    public static NetworkReceiverListener mNetworkListener;
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        boolean isConnect = isConnect(context);
-        if (mNetworkListener != null) {
-            mNetworkListener.onNetworkConnectChange(isConnect);
-        }
-    }
+    public static NetworkReceiverListener sNetworkListener;
 
     public static boolean isConnect(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getApplicationContext()
@@ -29,7 +21,13 @@ public class NetworkReceiver extends BroadcastReceiver {
     }
 
     public static void setNetworkReceiver(NetworkReceiverListener listener) {
-        mNetworkListener = listener;
+        sNetworkListener = listener;
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        boolean isConnect = isConnect(context);
+        if (sNetworkListener != null) sNetworkListener.onNetworkConnectChange(isConnect);
     }
 
     public interface NetworkReceiverListener {

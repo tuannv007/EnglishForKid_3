@@ -34,13 +34,15 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
     private int mTypeWatch;
     private OnItemClick mOnItemClick;
 
-    public DataModelAdapter(Context context, List<DataModel> dataModels, int type, int resIdLayou) {
+    public DataModelAdapter(Context context, List<DataModel> dataModels, int type, int
+        resIdLayout, OnItemClick onItemClick) {
         mContext = context;
         mLayoutInflater = LayoutInflater.from(mContext);
         mTypeWatch = type;
         mListDataModel = dataModels;
         mListDataSearch.addAll(dataModels);
-        mResIdLayout = resIdLayou;
+        mResIdLayout = resIdLayout;
+        mOnItemClick  = onItemClick;
     }
 
     public void setOnClickItem(OnItemClick onItemClick) {
@@ -74,8 +76,6 @@ public class DataModelAdapter extends RecyclerView.Adapter<DataModelAdapter.Data
             if (item.getName().toLowerCase().contains(keySearch.toLowerCase())) {
                 dataModels.add(item);
             }
-            if (item.getName().toLowerCase()
-                .contains(keySearch.toLowerCase())) dataModels.add(item);
         }
         mListDataModel.clear();
         mListDataModel.addAll(dataModels);
